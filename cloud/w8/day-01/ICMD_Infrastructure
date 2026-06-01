@@ -1,0 +1,40 @@
+# Cài đặt Terraform
+
+## Phương pháp 1: Sử dụng Package Manager
+
+### Windows
+
+Sử dụng **Chocolatey**, một package manager mã nguồn mở và miễn phí cho Windows:
+
+```bash
+choco install terraform
+```
+
+## Phương pháp 2: Cài đặt Thủ công
+
+Chọn một trong các bước dưới đây để lấy tệp thực thi:
+
+### Pre-compiled Executable
+
+- Tải xuống file Zip và giải nén
+- Terraform chạy trên tệp thực thi tên `terraform`
+- Đảm bảo tệp `terraform` khả thi trên **PATH** hệ thống
+
+### Compile from Source
+
+- Clone source code
+- Trỏ tới tệp thực thi `terraform`
+
+## Kiểm tra việc cài đặt
+
+Kiểm tra bằng cách mở terminal và hiển thị danh sách **Terraform's available subcommands**:
+
+```bash
+terraform -help
+```
+
+## Vòng đời Terraform
+
+- **Create** — Tạo mới hạ tầng
+- **Manage** — Quản lí và cập nhật hạ tầng
+- **Destroy** — Xóa bỏ hạ tầng
