@@ -130,16 +130,105 @@ ssh -i ~/.ssh/my-ec2-keypair.pem ubuntu@${EC2_IP}
 # kubectl logs -n demo deployment/demo-app
 ```
 
-### 8. Cleanup (Xóa hết tài nguyên)
+### 8. Xem kết quả (View Outputs & Screenshots)
 
 ```bash
-# Xóa tất cả tài nguyên AWS (EC2, ALB, VPC, etc.)
+# Lấy tất cả terraform outputs
+terraform output -json
+
+# Output mẫu:
+{
+  "alb_dns_name": {
+    "value": "http://k8s-demo-alb-1234567890.ap-southeast-1.elb.amazonaws.com"
+  },
+  "ec2_public_ip": {
+    "value": "13.250.101.102"
+  },
+  "ec2_ssh_command": {
+    "value": "ssh -i ~/.ssh/my-key.pem ubuntu@13.250.101.102"
+  },
+  "kubeconfig_path": {
+    "value": "./generated/kubeconfig"
+  },
+  "node_port": {
+    "value": 30080
+  }
+}
+
+# Mở trong browser:
+# ✅ http://k8s-demo-alb-1234567890.ap-southeast-1.elb.amazonaws.com
+# 📄 Kết quả: HTML page "Hello from Kubernetes on AWS"
+```
+
+#### Screenshot từ Browser
+
+![Web](Screen_evidence/Screenshot%202026-06-05%20101256.png)
+
+#### Kiểm tra Application Logs
+
+```bash
+# SSH vào EC2
+ssh -i ~/.ssh/my-key.pem ubuntu@$(terraform output -raw ec2_public_ip)
+
+# Xem logs từ nginx pods
+kubectl logs -n demo deployment/demo-app
+# Output:
+# 10.0.1.x - - [05/Jun/2026:10:30:45 +0000] "GET / HTTP/1.1" 200 156 ...
+# 10.0.1.x - - [05/Jun/2026:10:30:46 +0000] "GET / HTTP/1.1" 200 156 ...
+
+# Xem chi tiết pods
+kubectl get pods -n demo -o wide
+# NAME                        READY   STATUS    RESTARTS   IP           NODE
+# demo-app-7d6f9c8b9-abc12    1/1     Running   0          10.244.0.2   demo-cluster-control-plane
+# demo-app-7d6f9c8b9-def34    1/1     Running   0          10.244.0.3   demo-cluster-control-plane
+
+# Xem services
+kubectl get svc -n demo
+# NAME          TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+# demo-app-svc  NodePort   10.96.123.45    <none>        80:30080/TCP   5m
+```
+
+### 9. Cleanup (Xóa hết tài nguyên)
+
+```bash
+# ⚠️ QUAN TRỌNG: Xóa tài nguyên để tránh phát sinh chi phí
+
+# Cách 1: Xóa tất cả resources (khuyến nghị)
+terraform destroy -auto-approve
+
+# Cách 2: Xóa từng bước (interactive - sẽ hỏi confirm)
 terraform destroy
 
-# Hoặc xóa riêng một resource (nếu cần)
+# Cách 3: Xóa riêng một resource (nếu cần)
 terraform destroy -target=aws_instance.k8s_host
+terraform destroy -target=aws_lb.main
 
-# ⚠️ Confirm khi được hỏi (gõ "yes")
+# Kiểm tra lại (không nên còn resources)
+terraform state list  # Nên trống hoặc chỉ có local files
+
+# Dọn dẹp thêm (local)
+rm -rf generated/kubeconfig
+rm -rf .terraform/
+rm -f .terraform.lock.hcl
+rm -f terraform.tfstate*
+rm -f tfplan
+```
+
+#### Xác nhận Cleanup
+
+```bash
+# Sau destroy, kiểm tra AWS Console:
+# 1. EC2 Instances: không còn instance
+# 2. Load Balancers: không còn ALB
+# 3. Security Groups: không còn sg-xxxxx
+# 4. VPC: khi xóa hết → VPC trống hoặc chỉ có default resources
+
+# Hoặc dùng AWS CLI:
+aws ec2 describe-instances --query 'Reservations[].Instances[].InstanceId'
+# Output: [] (rỗng = OK)
+
+aws elbv2 describe-load-balancers --query 'LoadBalancers[].LoadBalancerArn'
+# Output: [] (rỗng = OK)
 ```
 
 ### 9. Troubleshooting (Xử lý sự cố)
@@ -1027,15 +1116,7 @@ terraform apply -auto-approve
 
 Sau khi `apply` thành công, bạn sẽ thấy output:
 
-```
-Outputs:
-
-alb_dns_name    = "http://k8s-demo-alb-1234567890.ap-southeast-1.elb.amazonaws.com"
-ec2_public_ip   = "13.250.xxx.xxx"
-ec2_ssh_command = "ssh -i ~/.ssh/my-key.pem ubuntu@13.250.xxx.xxx"
-kubeconfig_path = "./generated/kubeconfig"
-node_port       = 30080
-```
+![output](Screen_evidence/Screenshot%202026-06-05%20101229.png)
 
 Mở `alb_dns_name` trong browser để xem nginx demo app.
 
@@ -1048,7 +1129,7 @@ Mở `alb_dns_name` trong browser để xem nginx demo app.
 terraform destroy -auto-approve
 ```
 
----
+![destroy](Screen_evidence/image.png)
 
 ## Debug & Troubleshooting
 
@@ -1160,71 +1241,3 @@ kubectl get nodes  # Bây giờ hoạt động từ local
 | Private key KHÔNG commit vào git      | Chỉ `key_name` (tên) được ghi vào tfvars        |
 | AWS credentials KHÔNG trong code      | Dùng `aws configure` hoặc environment variables |
 | `terraform.tfvars` trong `.gitignore` | Chứa thông tin nhạy cảm                         |
-
-### .gitignore khuyến nghị
-
-```gitignore
-# Terraform state
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-
-# Variables (sensitive)
-terraform.tfvars
-*.tfvars
-
-# Generated files
-generated/*
-!generated/.gitkeep
-
-# Private keys (tuyệt đối không commit)
-*.pem
-*.key
-```
-
----
-
-## Thiết kế VPC
-
-**Quyết định**: Dùng **Default VPC** thay vì tạo custom VPC.
-
-**Lý do**:
-
-- Demo tập trung vào Kubernetes + ALB, không phải networking phức tạp.
-- Default VPC đã có Internet Gateway và route tables.
-- Mọi AWS account đều có Default VPC.
-
-**Tradeoffs**:
-
-- ✅ Đơn giản, zero VPC setup time.
-- ✅ Subnets tự động public → ALB hoạt động ngay.
-- ❌ Không có private subnets, NAT Gateway.
-- ❌ Không phù hợp production (workload nên nằm private subnet).
-
-**Production upgrade**: Tạo custom VPC với:
-
-- Private subnets cho EC2 (không public IP).
-- NAT Gateway cho outbound internet (Docker pull).
-- ALB ở public subnets, EC2 ở private subnets.
-
----
-
-## Estimated Cost (ap-southeast-1)
-
-| Resource      | Hourly   | Monthly (est.)    |
-| ------------- | -------- | ----------------- |
-| EC2 t3.medium | ~$0.0464 | ~$34              |
-| ALB           | ~$0.0225 | ~$16              |
-| Data transfer | Variable | ~$2-5             |
-| **Total**     |          | **~$52-55/tháng** |
-
-> Chạy `terraform destroy` sau khi demo để tránh phát sinh chi phí.
-
----
-
-## Changelog
-
-| Version | Date       | Changes         |
-| ------- | ---------- | --------------- |
-| 1.0.0   | 2026-06-04 | Initial release |

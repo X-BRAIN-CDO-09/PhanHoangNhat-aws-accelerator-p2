@@ -1,3 +1,0 @@
-# This directory is intentionally left empty.
-# It will contain generated files such as kubeconfig during terraform apply.
-# Do NOT commit any files from this directory (add to .gitignore).
