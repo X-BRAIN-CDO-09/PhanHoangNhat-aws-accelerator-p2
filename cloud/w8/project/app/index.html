@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>K8s Demo App — AWS Accelerator</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0f1a;
+      --surface:   #141928;
+      --border:    rgba(99,179,237,0.15);
+      --accent1:   #63b3ed;
+      --accent2:   #9f7aea;
+      --green:     #68d391;
+      --yellow:    #f6e05e;
+      --text:      #e2e8f0;
+      --muted:     #718096;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(99,179,237,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(159,122,234,0.06) 0%, transparent 60%);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem 3rem;
+      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 0 60px rgba(99,179,237,0.07), 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(104,211,145,0.12);
+      border: 1px solid rgba(104,211,145,0.3);
+      color: var(--green);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 1.5rem;
+    }
+
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(1.4); }
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat {
+      background: rgba(99,179,237,0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent1);
+    }
+
+    .stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 2rem;
+    }
+
+    .tag {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 8px;
+    }
+    .tag-blue   { background: rgba(99,179,237,0.12);  color: var(--accent1); border: 1px solid rgba(99,179,237,0.2); }
+    .tag-purple { background: rgba(159,122,234,0.12); color: var(--accent2); border: 1px solid rgba(159,122,234,0.2); }
+    .tag-green  { background: rgba(104,211,145,0.12); color: var(--green);   border: 1px solid rgba(104,211,145,0.2); }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+
+    .footer {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    .footer span { color: var(--accent1); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge"><div class="dot"></div>Running</div>
+
+    <h1>K8s Demo App</h1>
+    <p class="subtitle">Deployed via Terraform + kind on AWS EC2 · AWS Accelerator Week 8</p>
+
+    <div class="grid">
+      <div class="stat">
+        <div class="stat-label">Runtime</div>
+        <div class="stat-value">Kubernetes (kind)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Image</div>
+        <div class="stat-value">demo-app:latest</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Registry</div>
+        <div class="stat-value">Local (no Hub)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Load Balancer</div>
+        <div class="stat-value">AWS ALB</div>
+      </div>
+    </div>
+
+    <div class="stack">
+      <span class="tag tag-blue">Terraform IaC</span>
+      <span class="tag tag-blue">AWS EC2</span>
+      <span class="tag tag-blue">AWS ALB</span>
+      <span class="tag tag-purple">Kubernetes</span>
+      <span class="tag tag-purple">kind cluster</span>
+      <span class="tag tag-green">Docker Build</span>
+      <span class="tag tag-green">nginx:alpine</span>
+    </div>
+
+    <hr class="divider" />
+
+    <div class="stack">
+      <span class="tag tag-blue">VPC · 10.0.0.0/16</span>
+      <span class="tag tag-blue">NodePort 30080</span>
+      <span class="tag tag-green">imagePullPolicy: Never</span>
+    </div>
+
+    <p class="footer">
+      Built with ❤️ · <span>terraform apply</span> · ap-southeast-1
+    </p>
+  </div>
+</body>
+</html>
