@@ -1,0 +1,37 @@
+# =============================================================================
+# terraform.tfvars.example — Copy to terraform.tfvars and fill in values
+#
+# Usage:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # Edit terraform.tfvars with your real values
+# =============================================================================
+
+# ── General ───────────────────────────────────────────────────────────────────
+aws_region   = "ap-southeast-1"
+project_name = "webapp"
+environment  = "dev"
+
+# ── Networking ────────────────────────────────────────────────────────────────
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
+
+# ── EC2 ───────────────────────────────────────────────────────────────────────
+instance_type = "t3.micro"
+
+# Get your public IP: curl -s ifconfig.me
+# Then append /32 to restrict to a single IP, e.g. "203.0.113.42/32"
+allowed_ssh_cidr = "YOUR_IP_ADDRESS/32"
+
+# ── RDS MySQL ─────────────────────────────────────────────────────────────────
+db_name              = "appdb"
+db_username          = "admin"
+db_password          = "YourSecurePassword123!"  # Min 8 chars, change this!
+db_instance_class    = "db.t3.micro"
+db_allocated_storage = 20
+db_engine_version    = "8.0"
+db_multi_az          = false
+
+# ── S3 ────────────────────────────────────────────────────────────────────────
+s3_bucket_name   = ""       # Leave empty to auto-generate
+s3_force_destroy = true

@@ -456,11 +456,8 @@ Terraform Init Phase
       │       └─ Writes files locally (kubeconfig, etc.)
       │
       ├─→ 4. Null Provider (hashicorp/null ~> 3.0)
-      │       └─ Remote-exec provisioners (SSH bootstrap)
-      │
-      └─→ 5. Kubernetes Provider (hashicorp/kubernetes ~> 2.0)
-              └─ Optional (commented out in this setup)
-              └─ Requires direct API access or SSH tunnel
+             └─ Remote-exec provisioners (SSH bootstrap)
+     
 ```
 
 ### 2. Provider Configuration Details (Chi tiết cấu hình)
@@ -564,22 +561,6 @@ resource "null_resource" "build_and_deploy" {
 - manifest_hash thay đổi (K8s config) → redeploy
 ```
 
-#### E. Kubernetes Provider (Reference only)
-
-```hcl
-# COMMENTED OUT because:
-provider "kubernetes" {
-  host                   = "https://127.0.0.1:6443"
-  # Cannot reach because API server is internal to EC2
-
-  # SOLUTION: Use SSH tunnel or remote-exec (our approach)
-}
-
-# Instead, we use:
-provisioner "remote-exec" {
-  inline = ["kubectl apply -f manifest.yaml", ...]
-}
-```
 
 ### 3. Provider Initialization Flow (Quy trình khởi tạo)
 
@@ -594,7 +575,7 @@ provisioner "remote-exec" {
 │    ├─ tls     @ hashicorp/tls ~> 4.0              │
 │    ├─ local   @ hashicorp/local ~> 2.0            │
 │    ├─ null    @ hashicorp/null ~> 3.0             │
-│    └─ kubernetes @ hashicorp/kubernetes ~> 2.0    │
+│       │
 │                                                    │
 │ 3. Create .terraform/plugins directory             │
 │    └─ Store provider binaries                      │
@@ -1009,15 +990,6 @@ Orchestrate quá trình bootstrap qua SSH remote-exec:
 | `null_resource.fetch_kubeconfig` | Copy kubeconfig từ EC2 về `generated/`             |
 | `null_resource.deploy_k8s`       | Chạy `kubectl apply` trực tiếp trong EC2           |
 
-### 4. Kubernetes Provider (`hashicorp/kubernetes ~> 2.0`)
-
-> ⚠️ **Limitation**: API server của kind cluster chạy trên `127.0.0.1` bên trong EC2, không accessible từ bên ngoài. Kubernetes Provider cần kết nối TCP trực tiếp đến API server, điều này không khả thi mà không có SSH tunnel.
-
-**Chiến lược fallback**: Tất cả K8s resources (Namespace, ConfigMap, Deployment, Service) được deploy thông qua `null_resource.deploy_k8s` dùng `remote-exec` chạy `kubectl apply` bên trong EC2.
-
-File `kubernetes.tf` chứa tất cả resources ở dạng comment để tham khảo cấu trúc. Nếu muốn dùng Kubernetes Provider trực tiếp, xem phần [SSH Tunnel](#ssh-tunnel-advanced) bên dưới.
-
----
 
 ## Cấu trúc thư mục
 
@@ -1031,7 +1003,6 @@ File `kubernetes.tf` chứa tất cả resources ở dạng comment để tham k
 ├── ec2.tf                # EC2 Ubuntu + Ubuntu AMI data source
 ├── alb.tf                # ALB, Target Group, Listener, TG Attachment
 ├── bootstrap.tf          # Null provider: wait → kubeconfig → deploy K8s
-├── kubernetes.tf         # K8s resources (reference/commented, fallback via remote-exec)
 ├── templates/
 │   └── user_data.sh.tpl  # Bootstrap: Docker + kubectl + kind + cluster
 ├── generated/
