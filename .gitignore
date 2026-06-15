@@ -1,0 +1,35 @@
+# =============================================================================
+# .gitignore — Terraform project gitignore
+# =============================================================================
+
+# Terraform state (sensitive, do not commit)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform directories
+.terraform/
+.terraform.lock.hcl
+
+# Variable files (may contain sensitive values)
+terraform.tfvars
+*.auto.tfvars
+
+# Generated files (kubeconfig, etc.)
+generated/*
+!generated/.gitkeep
+
+# Private keys (NEVER commit private keys)
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+.vscode/
+.idea/
