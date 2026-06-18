@@ -1,0 +1,20 @@
+# Lab 5: app-of-apps root
+# Root App: App of Apps pattern - quản lý tất cả child applications
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/X-BRAIN-CDO-09/PhanHoangNhat-aws-accelerator-p2/tree/main/cloud/w10/lab_day4
+    path: argocd/apps
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
