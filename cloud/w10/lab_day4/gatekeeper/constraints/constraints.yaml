@@ -2,6 +2,8 @@ apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sBlockLatestTag
 metadata:
   name: block-latest-tag
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   match:
     kinds:
@@ -14,6 +16,8 @@ apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sRequireLimits
 metadata:
   name: require-limits
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   match:
     kinds:
@@ -26,6 +30,8 @@ apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sBlockRootUser
 metadata:
   name: block-root-user
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   match:
     kinds:
@@ -38,6 +44,8 @@ apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sBlockHostNetwork
 metadata:
   name: block-host-network
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   match:
     kinds:
@@ -50,6 +58,8 @@ apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sRequireOwnerLabel
 metadata:
   name: require-owner-label
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   match:
     kinds:
