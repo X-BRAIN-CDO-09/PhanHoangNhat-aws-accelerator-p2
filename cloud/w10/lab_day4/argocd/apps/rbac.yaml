@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+
+kind: Application
+
+
+metadata:
+
+  name: rbac
+
+
+spec:
+
+  source:
+
+    repoURL: https://github.com/X-BRAIN-CDO-09/PhanHoangNhat-aws-accelerator-p2/tree/main/cloud/w10/lab_day4
+
+    path: rbac
+
+
+  destination:
+
+    server: https://kubernetes.default.svc
+
+    namespace: default
