@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gatekeeper
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://open-policy-agent.github.io/gatekeeper/charts
+    chart: gatekeeper
+    targetRevision: 3.16.3 # or just latest, I'll use 3.16.3 or remove targetRevision to let it use latest? 3.x is fine. I'll omit targetRevision to use latest if not required, but helm apps require targetRevision. I'll use 3.16.3. Actually, omitting targetRevision defaults to latest for git, but for Helm it might need it, wait I will just put targetRevision: "*" or "3.16.x". Let's put targetRevision: 3.16.3.
+    # Wait, better use 3.16.3 or just *
+    targetRevision: 3.16.3
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gatekeeper-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

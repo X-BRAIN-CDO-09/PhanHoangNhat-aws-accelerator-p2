@@ -1,23 +1,18 @@
-# ArgoCD App: Deploy API Rollout + Service + ServiceMonitor
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: api
+  name: gatekeeper-policies
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
   source:
     repoURL: https://github.com/X-BRAIN-CDO-09/PhanHoangNhat-aws-accelerator-p2.git
-    path: app-api
+    path: cloud/w10/lab_day4/gatekeeper
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc
-    namespace: demo
+    namespace: gatekeeper-system
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-    - ServerSideApply=true

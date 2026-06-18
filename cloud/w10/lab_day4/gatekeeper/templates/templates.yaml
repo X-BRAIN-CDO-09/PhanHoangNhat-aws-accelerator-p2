@@ -1,0 +1,125 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sblocklatesttag
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sBlockLatestTag
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sblocklatesttag
+        
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          endswith(container.image, ":latest")
+          msg := sprintf("Container '%v' uses the 'latest' tag for image '%v', which is not allowed.", [container.name, container.image])
+        }
+        
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.template.spec.containers[_]
+          endswith(container.image, ":latest")
+          msg := sprintf("Container '%v' uses the 'latest' tag for image '%v', which is not allowed.", [container.name, container.image])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequirelimits
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequireLimits
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequirelimits
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          not container.resources.limits
+          msg := sprintf("Container '%v' does not have resource limits defined.", [container.name])
+        }
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.template.spec.containers[_]
+          not container.resources.limits
+          msg := sprintf("Container '%v' does not have resource limits defined.", [container.name])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sblockrootuser
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sBlockRootUser
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sblockrootuser
+
+        violation[{"msg": msg}] {
+          input.review.object.spec.securityContext.runAsUser == 0
+          msg := "Pod is not allowed to run as root user (runAsUser: 0)."
+        }
+        violation[{"msg": msg}] {
+          input.review.object.spec.template.spec.securityContext.runAsUser == 0
+          msg := "Pod is not allowed to run as root user (runAsUser: 0)."
+        }
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          container.securityContext.runAsUser == 0
+          msg := sprintf("Container '%v' is not allowed to run as root user.", [container.name])
+        }
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.template.spec.containers[_]
+          container.securityContext.runAsUser == 0
+          msg := sprintf("Container '%v' is not allowed to run as root user.", [container.name])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sblockhostnetwork
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sBlockHostNetwork
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sblockhostnetwork
+
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostNetwork == true
+          msg := "Pod is not allowed to use hostNetwork."
+        }
+        violation[{"msg": msg}] {
+          input.review.object.spec.template.spec.hostNetwork == true
+          msg := "Pod is not allowed to use hostNetwork."
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequireownerlabel
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequireOwnerLabel
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequireownerlabel
+
+        violation[{"msg": msg}] {
+          not input.review.object.metadata.labels["owner"]
+          msg := "You must provide an 'owner' label."
+        }

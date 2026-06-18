@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/X-BRAIN-CDO-09/PhanHoangNhat-aws-accelerator-p2/tree/main/cloud/w10/lab_day4
-    path: argocd/apps
+    repoURL: https://github.com/X-BRAIN-CDO-09/PhanHoangNhat-aws-accelerator-p2.git
+    path: cloud/w10/lab_day4/argocd/apps
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc
