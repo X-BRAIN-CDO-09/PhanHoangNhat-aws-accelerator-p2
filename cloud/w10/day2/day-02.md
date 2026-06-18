@@ -1,6 +1,6 @@
-# W10 — D2: AWS Security — IAM, GuardDuty & CloudTrail
+# W10 — D2: Secrets Rotation + Supply Chain Security
 
-> **Ngày:** T3 17/06/2026 | **Theme:** Operate Confidently on AWS
+> **Ngày:** T3 16/06/2026 | **Theme:** Secure & Operate
 > **Commit prefix:** `[W10-D2]`
 
 ---
@@ -9,39 +9,58 @@
 
 Sau ngày hôm nay, bạn có thể:
 
-- [ ] Viết IAM Policy đúng với Least Privilege
-- [ ] Dùng IAM Role thay IAM User cho EC2/Lambda
-- [ ] Bật GuardDuty + nhận alert khi có threat
-- [ ] Query CloudTrail để audit ai đã làm gì
-- [ ] Enable Security Hub để aggregate findings
+- [ ] Cấu hình AWS Secrets Manager với rotation schedule
+- [ ] Deploy External Secrets Operator (ESO) và sync secrets từ AWS vào K8s
+- [ ] Tích hợp Trivy image scan trong CI pipeline (fail on HIGH/CRITICAL)
+- [ ] Ký image với Cosign — cả keyless OIDC và key-based
+- [ ] Cấu hình admission webhook để verify signature trước khi deploy
+- [ ] Viết exception policy cho CVE cụ thể (có thời hạn)
 
 ---
 
 ## 📚 Kiến thức trọng tâm
 
-### Security Layering Model
+### Tổng quan — 2 trụ cột Security
 
 ```
-IAM (Who can do what)
-  ↓
-CloudTrail (What was done & when)
-  ↓
-GuardDuty (Detect threats in real-time)
-  ↓
-Security Hub (Aggregate all findings)
-  ↓
-AWS Config (Continuous compliance check)
+┌───────────────────────────────────────────────────────────┐
+│                  W10-D2 Security Focus                     │
+│                                                            │
+│  ┌──────────────────────┐   ┌────────────────────────┐    │
+│  │  SECRETS MANAGEMENT  │   │  SUPPLY CHAIN SECURITY │    │
+│  │                      │   │                        │    │
+│  │  "Credentials phải   │   │  "Image deploy lên     │    │
+│  │   xoay tự động,      │   │   cluster phải verified│    │
+│  │   dev không touch"    │   │   — không trust blind" │    │
+│  │                      │   │                        │    │
+│  │  ┌────────────────┐  │   │  ┌──────────────────┐  │    │
+│  │  │ AWS Secrets    │  │   │  │ Trivy Scan       │  │    │
+│  │  │ Manager        │──│──►│  │ (CI pipeline)    │  │    │
+│  │  └────────┬───────┘  │   │  └──────────────────┘  │    │
+│  │           │          │   │                        │    │
+│  │  ┌────────▼───────┐  │   │  ┌──────────────────┐  │    │
+│  │  │ External       │  │   │  │ Cosign Sign      │  │    │
+│  │  │ Secrets Op.    │  │   │  │ (CI pipeline)    │  │    │
+│  │  └────────┬───────┘  │   │  └──────────────────┘  │    │
+│  │           │          │   │                        │    │
+│  │  ┌────────▼───────┐  │   │  ┌──────────────────┐  │    │
+│  │  │ K8s Secret     │  │   │  │ Admission Verify │  │    │
+│  │  │ (auto-sync)    │  │   │  │ (cluster gate)   │  │    │
+│  │  └────────────────┘  │   │  └──────────────────┘  │    │
+│  └──────────────────────┘   └────────────────────────┘    │
+└───────────────────────────────────────────────────────────┘
 ```
 
 ### Chi tiết từng topic
 
 | # | File kiến thức | Nội dung |
 |---|---|---|
-| 1 | [01-iam-deep-dive.md](knowledge/01-iam-deep-dive.md) | IAM Policy, Least Privilege, Role vs User, Instance Profile |
-| 2 | [02-cloudtrail.md](knowledge/02-cloudtrail.md) | Audit trail, Management/Data Events, Athena query |
-| 3 | [03-guardduty.md](knowledge/03-guardduty.md) | Threat detection, Finding types, Alert integration |
-| 4 | [04-security-hub.md](knowledge/04-security-hub.md) | Aggregate findings, CIS Benchmark, compliance |
-| 5 | [05-security-best-practices.md](knowledge/05-security-best-practices.md) | Security checklist, layering model, production hardening |
+| 1 | [01-aws-secrets-manager.md](knowledge/01-aws-secrets-manager.md) | Secrets Manager architecture, rotation, IAM policy, pricing |
+| 2 | [02-external-secrets-operator.md](knowledge/02-external-secrets-operator.md) | ESO install, SecretStore, ExternalSecret CRD, refreshInterval, zero-restart sync |
+| 3 | [03-trivy-ci-scan.md](knowledge/03-trivy-ci-scan.md) | Trivy scan modes, CI integration (GitHub Actions/GitLab CI), severity policy, SBOM |
+| 4 | [04-cosign-signing.md](knowledge/04-cosign-signing.md) | Cosign keyless OIDC, key-based signing, verify, Sigstore/Rekor transparency log |
+| 5 | [05-admission-verify-signature.md](knowledge/05-admission-verify-signature.md) | Kyverno/Connaisseur verify image, policy config, exception handling |
+| 6 | [06-cve-exception-policy.md](knowledge/06-cve-exception-policy.md) | Exception ADR, .trivyignore, time-bound exceptions, risk acceptance |
 
 ---
 
@@ -49,11 +68,12 @@ AWS Config (Continuous compliance check)
 
 | Tài liệu | Link | Ưu tiên |
 |---|---|---|
-| IAM Best Practices | https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html | ⭐⭐⭐ Đọc trước |
-| CloudTrail User Guide | https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-user-guide.html | ⭐⭐⭐ Quan trọng |
-| GuardDuty User Guide | https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html | ⭐⭐ Cần biết |
-| Security Hub User Guide | https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html | ⭐⭐ Cần biết |
-| AWS Security Best Practices | https://docs.aws.amazon.com/prescriptive-guidance/latest/aws-startup-security-baseline | ⭐ Nâng cao |
+| AWS Secrets Manager | https://docs.aws.amazon.com/secretsmanager | ⭐⭐⭐ Đọc trước |
+| External Secrets Operator | https://external-secrets.io/latest | ⭐⭐⭐ Quan trọng |
+| Trivy Documentation | https://aquasecurity.github.io/trivy | ⭐⭐⭐ Thực hành |
+| Cosign / Sigstore | https://docs.sigstore.dev/cosign/overview | ⭐⭐⭐ Quan trọng |
+| SLSA Framework | https://slsa.dev | ⭐⭐ Cần biết |
+| Kyverno Verify Images | https://kyverno.io/docs/writing-policies/verify-images | ⭐⭐ Thực hành |
 
 ---
 
@@ -61,33 +81,43 @@ AWS Config (Continuous compliance check)
 
 ```
 cloud/w10/day2/
-├── day-02.md                      # File này
+├── day-02.md                         # File này
 ├── knowledge/
-│   ├── 01-iam-deep-dive.md
-│   ├── 02-cloudtrail.md
-│   ├── 03-guardduty.md
-│   ├── 04-security-hub.md
-│   └── 05-security-best-practices.md
-└── terraform/
-    ├── iam.tf
-    ├── cloudtrail.tf
-    ├── guardduty.tf
-    ├── security-hub.tf
-    └── variables.tf
+│   ├── 01-aws-secrets-manager.md
+│   ├── 02-external-secrets-operator.md
+│   ├── 03-trivy-ci-scan.md
+│   ├── 04-cosign-signing.md
+│   ├── 05-admission-verify-signature.md
+│   └── 06-cve-exception-policy.md
+├── eso/
+│   ├── secret-store.yaml
+│   ├── external-secret-db.yaml
+│   └── external-secret-api-key.yaml
+├── signing/
+│   ├── cosign-keypair/
+│   │   └── README.md
+│   └── verify-policy.yaml
+└── ci-trivy/
+    ├── .github/
+    │   └── workflows/
+    │       └── scan-and-sign.yaml
+    └── .trivyignore
 ```
 
 ---
 
 ## ✅ Checklist tự kiểm tra
 
-- [ ] Viết IAM Policy với đúng Effect/Action/Resource/Condition
-- [ ] Giải thích Least Privilege principle và áp dụng vào policy
-- [ ] Phân biệt IAM User vs IAM Role — khi nào dùng gì
-- [ ] Tạo IAM Role cho EC2 (Instance Profile) bằng Terraform
-- [ ] Bật CloudTrail và query log: ai đã xoá S3 bucket?
-- [ ] Bật GuardDuty và hiểu các Finding types
-- [ ] Enable Security Hub và xem compliance score
-- [ ] Vẽ Security Layering diagram cho production AWS account
+- [ ] Tạo secret trong AWS Secrets Manager bằng CLI/Terraform
+- [ ] Enable automatic rotation 30 ngày
+- [ ] Deploy ESO và tạo SecretStore kết nối AWS
+- [ ] Tạo ExternalSecret với `refreshInterval: 1m` — verify secret tự sync
+- [ ] Chạy `trivy image scan` locally — hiểu output severity levels
+- [ ] Viết GitHub Actions workflow: build → scan → fail nếu HIGH/CRITICAL
+- [ ] Ký image với Cosign keyless (GitHub Actions OIDC)
+- [ ] Verify signature: `cosign verify --certificate-identity --certificate-oidc-issuer`
+- [ ] Deploy Kyverno policy verify signature — test với unsigned image
+- [ ] Viết .trivyignore cho 1 CVE cụ thể với comment giải thích
 
 ---
 
