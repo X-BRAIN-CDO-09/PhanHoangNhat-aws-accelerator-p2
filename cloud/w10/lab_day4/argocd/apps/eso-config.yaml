@@ -1,0 +1,25 @@
+# ArgoCD App: Deploy SecretStore + ExternalSecret resources
+# sync-wave: -1 → Sau khi ESO operator (wave -2) đã sẵn sàng
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eso-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/X-BRAIN-CDO-09/PhanHoangNhat-aws-accelerator-p2.git
+    path: cloud/w10/lab_day4/eso
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,4 +1,4 @@
-# Build and push Docker image to GitHub Container Registry
+# Build, Scan (Trivy), Sign (Cosign) and Push Docker image to GitHub Container Registry
 name: Build and Push Image
 
 on:
@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write  # Required for cosign keyless / OIDC
 
     steps:
       - name: Checkout repository
@@ -54,13 +55,85 @@ jobs:
             type=raw,value=${{ steps.semver.outputs.version }}
             type=sha,prefix=v${{ steps.semver.outputs.version }}-
 
-      - name: Build and push Docker image
+      - name: Build Docker image (local, before push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./src/api
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # ──────────────────────────────────────────────────────
+      # PART 2: TRIVY SECURITY SCAN
+      # Scan image trước khi push — fail nếu có HIGH/CRITICAL CVE
+      # ──────────────────────────────────────────────────────
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.version }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: false
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+          output: trivy-results.txt
+
+      - name: Upload Trivy scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-scan-results
+          path: trivy-results.txt
+          retention-days: 30
+
+      # ──────────────────────────────────────────────────────
+      # Push image chỉ khi Trivy pass
+      # ──────────────────────────────────────────────────────
+      - name: Push Docker image (after Trivy pass)
         uses: docker/build-push-action@v6
         with:
           context: ./src/api
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      # ──────────────────────────────────────────────────────
+      # PART 3: COSIGN SIGN IMAGE
+      # Ký image bằng private key lưu trong GitHub Secret
+      # COSIGN_PRIVATE_KEY và COSIGN_PASSWORD phải được set
+      # ──────────────────────────────────────────────────────
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Sign image with Cosign
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          IMAGE_DIGEST=$(docker buildx imagetools inspect \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.version }} \
+            --format '{{.Manifest.Digest}}')
+
+          echo "Signing image digest: $IMAGE_DIGEST"
+
+          # Sign by digest (immutable reference)
+          cosign sign --yes \
+            --key env://COSIGN_PRIVATE_KEY \
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${IMAGE_DIGEST}"
+
+          echo "✅ Image signed and signature pushed to registry"
+
+      - name: Verify signature (post-sign check)
+        run: |
+          IMAGE_DIGEST=$(docker buildx imagetools inspect \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.version }} \
+            --format '{{.Manifest.Digest}}')
+
+          cosign verify \
+            --key signing/cosign.pub \
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${IMAGE_DIGEST}" \
+            | jq .
 
       - name: Update rollout.yaml with new version
         run: |

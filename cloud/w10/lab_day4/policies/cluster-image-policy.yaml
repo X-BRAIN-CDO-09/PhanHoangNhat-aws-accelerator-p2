@@ -1,0 +1,28 @@
+# ClusterImagePolicy: Enforce cosign signature verification
+# Chỉ allow image đã được ký bởi cosign key tương ứng với cosign.pub
+#
+# Áp dụng cho namespace có label: policy.sigstore.dev/include=true
+# Gắn label cho namespace demo:
+#   kubectl label namespace demo policy.sigstore.dev/include=true
+#
+# Test case 1 (REJECT): Deploy image chưa ký → admission webhook từ chối
+# Test case 2 (PASS):   Deploy image đã được CI ký bằng cosign → pass
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: signed-images-policy
+spec:
+  images:
+    # Enforce trên tất cả images từ ghcr.io registry của org
+    - glob: "ghcr.io/nhatphanhk/**"
+    # Thêm wildcard cho container images khác nếu cần:
+    # - glob: "ghcr.io/x-brain-cdo-09/**"
+  authorities:
+    - name: cosign-key-authority
+      key:
+        # Public key để verify — nội dung từ signing/cosign.pub
+        # Thay thế data bên dưới bằng public key thực của bạn
+        data: |
+          -----BEGIN PUBLIC KEY-----
+          REPLACE_WITH_YOUR_COSIGN_PUBLIC_KEY_CONTENT
+          -----END PUBLIC KEY-----

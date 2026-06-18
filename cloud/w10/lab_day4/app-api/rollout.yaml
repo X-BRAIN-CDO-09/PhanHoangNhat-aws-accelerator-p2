@@ -1,5 +1,6 @@
 # Rollout: Progressive delivery với canary strategy
 # Sync wave 0: Deploy trước để tạo pods
+# DB_PASSWORD: đọc từ volumeMount (db-secret) - KHÔNG hard-code env var
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
@@ -19,6 +20,14 @@ spec:
       labels:
         app: api
     spec:
+      volumes:
+        # Volume đọc từ K8s Secret "db-secret" do ESO quản lý
+        - name: db-secret-volume
+          secret:
+            secretName: db-secret
+            items:
+              - key: password
+                path: password
       containers:
       - name: api
         image: ghcr.io/nhatphanhk/w10-api:0.0.1
@@ -31,6 +40,11 @@ spec:
           value: "v0.0.1"
         - name: ERROR_RATE
           value: "0"
+        volumeMounts:
+          # Mount secret file vào /etc/secrets/ - không restart khi secret update
+          - name: db-secret-volume
+            mountPath: /etc/secrets
+            readOnly: true
         livenessProbe:
           httpGet:
             path: /healthz

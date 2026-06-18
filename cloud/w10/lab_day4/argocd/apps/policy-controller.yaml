@@ -1,0 +1,40 @@
+# ArgoCD App: Install Sigstore Policy Controller via Helm
+# sync-wave: -1 → Cài sau ESO operator nhưng trước app deployments
+# Policy Controller sẽ reject các image chưa được ký bởi cosign
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policy-controller
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  source:
+    repoURL: https://sigstore.github.io/helm-charts
+    chart: policy-controller
+    targetRevision: 0.9.0
+    helm:
+      releaseName: policy-controller
+      values: |
+        # Webhook sẽ enforce policy cho namespaces có label:
+        # policy.sigstore.dev/include=true
+        webhook:
+          namespaceSelector:
+            matchExpressions:
+              - key: policy.sigstore.dev/include
+                operator: In
+                values: ["true"]
+        policyController:
+          # Fail open → false: reject nếu không verify được (production-safe)
+          failOpen: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cosign-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
