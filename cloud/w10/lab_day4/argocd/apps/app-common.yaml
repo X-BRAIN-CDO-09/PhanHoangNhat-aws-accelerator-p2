@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/X-BRAIN-CDO-09/PhanHoangNhat-aws-accelerator-p2.git
-    path: app-common
+    path: cloud/w10/lab_day4/app-common
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc
