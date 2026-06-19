@@ -1,22 +1,4 @@
-# Cosign Public Key — dùng để verify image signatures
-#
-# Đây là PUBLIC KEY — an toàn để commit lên git.
-# PRIVATE KEY (cosign.key) KHÔNG được commit — lưu trong GitHub Secret: COSIGN_PRIVATE_KEY
-#
-# Cách generate key pair:
-#   cosign generate-key-pair
-#   → tạo ra cosign.key (private) và cosign.pub (public)
-#
-# Sau đó:
-#   1. Copy nội dung cosign.key vào GitHub Secret: COSIGN_PRIVATE_KEY
-#   2. Set passphrase vào GitHub Secret: COSIGN_PASSWORD
-#   3. Commit file này (cosign.pub) lên git
-#   4. Thêm cosign.key vào .gitignore
-#
-# Verify image thủ công:
-#   cosign verify --key signing/cosign.pub ghcr.io/OWNER/IMAGE@sha256:DIGEST
-#
-# ⚠️  PLACEHOLDER - Thay thế bằng public key thực sau khi chạy: cosign generate-key-pair
 -----BEGIN PUBLIC KEY-----
-REPLACE_WITH_YOUR_COSIGN_PUBLIC_KEY_AFTER_RUNNING_cosign_generate-key-pair
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4lwracHG7JyePlRhF+tucaaDmUOg
+/blYJuj7qQZIy7gALtauka81r3zbZGYFWjzHUHubXvgQSn6DcgDJJ/UW+g==
 -----END PUBLIC KEY-----

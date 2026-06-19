@@ -24,5 +24,6 @@ spec:
         # Thay thế data bên dưới bằng public key thực của bạn
         data: |
           -----BEGIN PUBLIC KEY-----
-          REPLACE_WITH_YOUR_COSIGN_PUBLIC_KEY_CONTENT
+          MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4lwracHG7JyePlRhF+tucaaDmUOg
+          /blYJuj7qQZIy7gALtauka81r3zbZGYFWjzHUHubXvgQSn6DcgDJJ/UW+g==
           -----END PUBLIC KEY-----

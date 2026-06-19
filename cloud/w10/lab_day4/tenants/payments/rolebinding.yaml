@@ -9,6 +9,10 @@ subjects:
 - kind: User
   name: payments-dev
 
+- kind: ServiceAccount
+  name: payments-sa
+  namespace: payments
+
 roleRef:
   kind: Role
   name: payments-dev

@@ -30,7 +30,7 @@ spec:
                 path: password
       containers:
       - name: api
-        image: ghcr.io/nhatphanhk/w10-api:0.0.1
+        image: ghcr.io/x-brain-cdo-09/w10-api:0.0.1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
