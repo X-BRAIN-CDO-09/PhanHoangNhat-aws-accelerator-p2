@@ -205,3 +205,9 @@ kubectl delete ns argocd
 minikube stop -p w10
 minikube delete -p w10
 ```
+
+### Take-Home: Onboard team mới (Multi-tenant an toàn)
+
+Guardrail của Gatekeeper được thực thi tập trung ở cấp cluster nên tự động áp dụng cho mọi team mới mà không cần viết lại policy.
+Role/RoleBinding giới hạn quyền trong namespace giúp cô lập giữa các team.
+ClusterRoleBinding chỉ nên cấp cho quản trị viên hoặc thành phần hạ tầng vì quyền tác động trên toàn cluster.
