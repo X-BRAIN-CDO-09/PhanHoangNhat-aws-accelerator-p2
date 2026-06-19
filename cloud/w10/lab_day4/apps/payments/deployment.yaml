@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: payments-api
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: payments
+
+  template:
+    metadata:
+      labels:
+        app: payments
+
+    spec:
+      containers:
+      - name: api
+
+        image: yourrepo/payments:v1
+
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        securityContext:
+          runAsNonRoot: true
