@@ -1,0 +1,32 @@
+# 1. Default deny tất cả Ingress vào payments
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: payments
+spec:
+  podSelector: {} # Áp dụng cho mọi pod trong NS này
+  policyTypes:
+  - Ingress
+
+---
+# 2. Restrict Egress: Chỉ cho phép gọi nội bộ NS payments và gọi DNS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: restrict-egress
+  namespace: payments
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: payments # Chỉ gọi nội bộ NS payments
+  - ports: # Cho phép gọi CoreDNS (bắt buộc để app hoạt động)
+    - port: 53
+      protocol: UDP
+    - port: 53
+      protocol: TCP
